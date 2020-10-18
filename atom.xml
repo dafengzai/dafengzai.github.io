@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://dafengzai.github.io</id>
+    <title>大风仔的博客</title>
+    <updated>2020-10-18T09:31:46.765Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://dafengzai.github.io"/>
+    <link rel="self" href="https://dafengzai.github.io/atom.xml"/>
+    <subtitle>Big brother is watching you</subtitle>
+    <logo>https://dafengzai.github.io/images/avatar.png</logo>
+    <icon>https://dafengzai.github.io/favicon.ico</icon>
+    <rights>All rights reserved 2020, 大风仔的博客</rights>
+</feed>
