@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>TCP/IP协议概览（网络接口层） | 大风仔的博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://dafengzai.github.io/favicon.ico?v=1616601416144">
+<link rel="stylesheet" href="https://dafengzai.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="总览
+TCP/IP协议总览
+TCP/IP协议主要由：数据链路层、网络层、传输层、应用层这几部分组成。本章主要关注数据链路层
+网络接口层
+网络接口层可以初略对应OSI七层模型中的物理层与数据链路层，夹在网络层与下面的物理层之间，主要工作是对网..." />
+    <meta name="keywords" content="" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://dafengzai.github.io">
+        <img src="https://dafengzai.github.io/images/avatar.png?v=1616601416144" class="site-logo">
+        <h1 class="site-title">大风仔的博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+          <a class="social-link" href="https://github.com/dafengzai" target="_blank">
+            <i class="fab fa-github"></i>
+          </a>
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      Big brother is watching you
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://dafengzai.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">TCP/IP协议概览（网络接口层）</h2>
+            <div class="post-date">2020-11-04</div>
+            
+            <div class="post-content" v-pre>
+              <h1 id="总览">总览</h1>
+<h2 id="tcpip协议总览">TCP/IP协议总览</h2>
+<p>TCP/IP协议主要由：数据链路层、网络层、传输层、应用层这几部分组成。本章主要关注数据链路层</p>
+<h1 id="网络接口层">网络接口层</h1>
+<p>网络接口层可以初略对应OSI七层模型中的物理层与数据链路层，夹在网络层与下面的物理层之间，主要工作是对网络层到来的IP数据包封装成数据链路层的“数据帧”，并将数据帧通过通信设备（一般为网卡）送入物理层中通过传输介质传输，并对在物理层传输的比特流进行<strong>差错控制与流量控制</strong>，将物理层提供的可能出错的物理连接改造成为逻辑上无差错的数据链路，使之对网络层表现为一条无差错的链路。</p>
+<h2 id="差错控制">差错控制</h2>
+<p>比特流在传输介质中传输时，由于线路本身产生的噪声与外界因素的影响，使得比特流中的某些比特位发生了错误，由1变成0，或由0变成1。或者实在数据帧层面上发生了丢失/重复/乱序。这些错误都会影响链路层向上为网络层提供可靠服务。</p>
+<p>对于比特位发生的错误，在数据链路层上的基本原则都是通过冗余编码来对一组二进制比特串进行检错或纠错，即对应着数据链路层的检错编码（常用的例如CRC循环冗余编码）与纠错编码（例如海明编码），显然纠错编码需要的冗余度要大于检错编码，使用哪种编码方式便取决于信道的可靠控制，当信道非常可靠的时候，检错码代价就会小于纠错码。</p>
+<p>数据链路层的数据帧尾部的FCS一般就是用于差错控制的比特位。</p>
+<h2 id="流量控制">流量控制</h2>
+<p>与传输层类似，数据链路层上也有自身的流量控制机制，但区别在于传输层控制的是端到端之间的数据流量，而数据链路层上的流量控制是控制相邻两个节点之间的，仅为了保证接收方节点有足够的缓存空间来接收流量数据。</p>
+<p>在数据链路层上的流量控制机制有：</p>
+<ol>
+<li>停止等待协议：在收到确认后再发送下一个数据帧，简单，但信道利用率低。</li>
+<li>滑动窗口协议：有后退N帧协议（GBN）：发送窗口大小＞1，接收窗口大小=1，采用累积确认的方式 /  选择重传协议（SR）：发送窗口大小&gt;1, 接收窗口大小&gt;1，不管乱序，正确接收就返回ack，同时失序帧被缓存。</li>
+</ol>
+<h2 id="组帧">组帧</h2>
+<p>在数据链路层上传输的单位是帧，数据链路层的第一项主要任务就是将网络层送来的IP数据包封装成“帧”，其所能容纳的最大数据长度也叫最大传输单元（MTU）一般默认是1500比特。封装成帧的方式一般就是在一段数据的前后分别添加头部与尾部用于标记（一般为特定比特串，例如01111110(HDLC协议，同时数据内连续5个1后添0)），方便从接收端收到物理层上交的比特流中识别数据帧的开始与结束。<br>
+<img src="https://dafengzai.github.io/post-images/1615305313242.png" alt="" loading="lazy"></p>
+<p>同时这些数据帧都是在接入了网络的网络适配器（网卡）之间进行传输，而网卡地址（MAC地址）就是数据帧的发送地址和接收地址。有了MAC地址以后，以太网采用广播形式，把数据帧发给所在子网络内所有主机，子网内每台主机在接收到这个包以后，都会读取首部里的目标MAC地址，然后和自己的MAC地址进行对比，如果相同就做下一步处理，如果不同，就丢弃这个包，以此来实现数据帧在相邻节点间的传输。</p>
+
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://dafengzai.github.io/post/wsl2linux-xia-kai-fa-de-zui-hao-ru-men-gong-ju/">
+                  <h3 class="post-title">
+                    WSL2：Linux下开发的最好入门工具
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>
