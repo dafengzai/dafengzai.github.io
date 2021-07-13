@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://dafengzai.github.io</id>
     <title>大风仔的博客</title>
-    <updated>2021-03-24T16:00:05.051Z</updated>
+    <updated>2021-07-13T16:39:08.331Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://dafengzai.github.io"/>
     <link rel="self" href="https://dafengzai.github.io/atom.xml"/>
@@ -10,6 +10,88 @@
     <logo>https://dafengzai.github.io/images/avatar.png</logo>
     <icon>https://dafengzai.github.io/favicon.ico</icon>
     <rights>All rights reserved 2021, 大风仔的博客</rights>
+    <entry>
+        <title type="html"><![CDATA[TCP/IP协议中的网络层（概述）]]></title>
+        <id>https://dafengzai.github.io/post/tcpip-xie-yi-zhong-de-wang-luo-ceng-gai-shu/</id>
+        <link href="https://dafengzai.github.io/post/tcpip-xie-yi-zhong-de-wang-luo-ceng-gai-shu/">
+        </link>
+        <updated>2021-03-24T16:20:55.000Z</updated>
+        <content type="html"><![CDATA[<p>本篇开始关注网路协议中的”网络层“，TCP/IP协议中在网络层中采用标准化的IP协议。网络层的主要任务就是就是通过路由选择算法，为数据报分组通过通信子网选择最合适的路径，将将数据报分组及时送达。</p>
+<p>具体来说，网络层的功能有三点：</p>
+<ol>
+<li><strong>路由选择与分组转发</strong>：通过各种路由算法，为数据报通过通信子网选择最合适的转发路径。</li>
+<li>异构网络互联：IP 协议屏蔽了下层物理网络的差异，为上层提供统一的 IP 数据报。</li>
+<li>拥塞控制：防止所有节点来不及接收分组而造成大量丢弃的机制。</li>
+</ol>
+<p>本篇仅作网络层的基本介绍，后续有关路由选择的具体介绍见后续文章。</p>
+<h2 id="ip-数据报结构">IP 数据报结构</h2>
+<h3 id="ip-报文头">IP 报文头</h3>
+<p><strong>IPv4</strong></p>
+<pre><code>RFC 971 defines the fields of the IPv4 header on page 11 using the following
+diagram: (&quot;Figure 4&quot;)
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |Version|  IHL  |Type of Service|          Total Length         |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |         Identification        |Flags|      Fragment Offset    |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |  Time to Live |    Protocol   |         Header Checksum       |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                       Source Address                          |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                    Destination Address                        |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                    Options                    |    Padding    |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</code></pre>
+<p>主要关注的几个字段有：</p>
+<ul>
+<li>总长度：首部+后接的数据部分，单位是字节B</li>
+<li>区分服务：指示期望获得哪种类型的服务</li>
+<li>生存时间（TTL）：IP分组的保质期。经过一个路由器-1，变成0则丢弃</li>
+<li>协议：数据部分的协议</li>
+<li>首部检验和：只检验首部</li>
+<li>源IP地址和目的IP地址：32位</li>
+</ul>
+<p><strong>IPv6</strong></p>
+<pre><code>RFC2460 section 3
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |Version| Traffic Class |               Flow Label              |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |         Payload Length        |  Next Header  |   Hop Limit   |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                                                               |
+    +                                                               +
+    |                                                               |
+    +                         Source Address                        +
+    |                                                               |
+    +                                                               +
+    |                                                               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                                                               |
+    +                                                               +
+    |                                                               |
+    +                      Destination Address                      +
+    |                                                               |
+    +                                                               +
+    |                                                               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</code></pre>
+<p>值得关注的有：</p>
+<ul>
+<li>Next Header: Pv6报文是由IPv6标准头+扩展头+负载Payload组成，Next Header字段就指定了扩展头的类型</li>
+<li>Payload Length: IPv6 报文头之后的数据长度，单位是字节</li>
+<li>Hop Limit: 与IPv4 报文头中的Time to Live类似，每经过一个转发节点减一，为0便丢弃。</li>
+<li>128 bit的IPv6地址</li>
+</ul>
+<h2 id="分组转发">分组转发</h2>
+<p>转发（forwarding）一般指网络中的路由器转发IP分组的物理传输过程与数据报转发机制，用于（根据路由表/转发表FIB）决定数据报分组从哪个路径（端口）发送出去。至于如何决定哪些IP地址的报文该从哪个端口进行转发，则是由路由算法进行决定的。</p>
+<h2 id="拥塞控制">拥塞控制</h2>
+<p>拥塞，在网络中的各个层都会发生。在网络层上，节点来不及接收分组便会发生拥塞。拥塞控制机制主要关心在传输超过网络能够在合理的报文传输延时范围内传输的数据量时发生的情况，是一个网络上的全局性的问题，包含网络中的各个主机与路由器。在网络层上亦有负载均衡/流量调节的机制来防止数据报分组的转发发生拥塞。</p>
+<p>值得注意的时，在网络层上的拥塞控制主要关注的是“路径”，在某个链路负载大时通过降低源节点的发送速率（流量调节）或将流量引导到其他链路转发到目标节点（负载均衡），从而保证传送的数据不超过链路的容量。</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[TCP/IP协议概览（网络接口层）]]></title>
         <id>https://dafengzai.github.io/post/tcpip-xie-yi-jie-xi/</id>
@@ -36,6 +118,7 @@
 <p>在数据链路层上传输的单位是帧，数据链路层的第一项主要任务就是将网络层送来的IP数据包封装成“帧”，其所能容纳的最大数据长度也叫最大传输单元（MTU）一般默认是1500比特。封装成帧的方式一般就是在一段数据的前后分别添加头部与尾部用于标记（一般为特定比特串，例如01111110(HDLC协议，同时数据内连续5个1后添0)），方便从接收端收到物理层上交的比特流中识别数据帧的开始与结束。<br>
 <img src="https://dafengzai.github.io/post-images/1615305313242.png" alt="" loading="lazy"></p>
 <p>同时这些数据帧都是在接入了网络的网络适配器（网卡）之间进行传输，而网卡地址（MAC地址）就是数据帧的发送地址和接收地址。有了MAC地址以后，以太网采用广播形式，把数据帧发给所在子网络内所有主机，子网内每台主机在接收到这个包以后，都会读取首部里的目标MAC地址，然后和自己的MAC地址进行对比，如果相同就做下一步处理，如果不同，就丢弃这个包，以此来实现数据帧在相邻节点间的传输。</p>
+<p>网络层的基于IP地址的报文转发要在数据链路层上转换为基于MAC地址的数据帧转发，还需要引入一个”ARP“协议来将目标端的IP地址转换为为对应的MAC地址进发送。具体来说就是发送时主机依靠IP-MAC的对应关系/ARP表来封装数据帧，在数据帧头部封装上对应的MAC地址，而二层设备在收到含有目标MAC地址的数据帧后，查看自己的“MAC地址表”，便知道这个MAC地址该从自己的哪个端口发送出去。以此将数据帧送到相应的目标节点。</p>
 ]]></content>
     </entry>
     <entry>

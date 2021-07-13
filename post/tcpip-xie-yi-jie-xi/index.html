@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://dafengzai.github.io/favicon.ico?v=1616601416144">
+<link rel="shortcut icon" href="https://dafengzai.github.io/favicon.ico?v=1626194336694">
 <link rel="stylesheet" href="https://dafengzai.github.io/styles/main.css">
 
 
@@ -32,7 +32,7 @@ TCP/IP协议主要由：数据链路层、网络层、传输层、应用层这�
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://dafengzai.github.io">
-        <img src="https://dafengzai.github.io/images/avatar.png?v=1616601416144" class="site-logo">
+        <img src="https://dafengzai.github.io/images/avatar.png?v=1626194336694" class="site-logo">
         <h1 class="site-title">大风仔的博客</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -122,6 +122,7 @@ TCP/IP协议主要由：数据链路层、网络层、传输层、应用层这�
 <p>在数据链路层上传输的单位是帧，数据链路层的第一项主要任务就是将网络层送来的IP数据包封装成“帧”，其所能容纳的最大数据长度也叫最大传输单元（MTU）一般默认是1500比特。封装成帧的方式一般就是在一段数据的前后分别添加头部与尾部用于标记（一般为特定比特串，例如01111110(HDLC协议，同时数据内连续5个1后添0)），方便从接收端收到物理层上交的比特流中识别数据帧的开始与结束。<br>
 <img src="https://dafengzai.github.io/post-images/1615305313242.png" alt="" loading="lazy"></p>
 <p>同时这些数据帧都是在接入了网络的网络适配器（网卡）之间进行传输，而网卡地址（MAC地址）就是数据帧的发送地址和接收地址。有了MAC地址以后，以太网采用广播形式，把数据帧发给所在子网络内所有主机，子网内每台主机在接收到这个包以后，都会读取首部里的目标MAC地址，然后和自己的MAC地址进行对比，如果相同就做下一步处理，如果不同，就丢弃这个包，以此来实现数据帧在相邻节点间的传输。</p>
+<p>网络层的基于IP地址的报文转发要在数据链路层上转换为基于MAC地址的数据帧转发，还需要引入一个”ARP“协议来将目标端的IP地址转换为为对应的MAC地址进发送。具体来说就是发送时主机依靠IP-MAC的对应关系/ARP表来封装数据帧，在数据帧头部封装上对应的MAC地址，而二层设备在收到含有目标MAC地址的数据帧后，查看自己的“MAC地址表”，便知道这个MAC地址该从自己的哪个端口发送出去。以此将数据帧送到相应的目标节点。</p>
 
             </div>
             
