@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://dafengzai.github.io/favicon.ico?v=1626584410935">
+<link rel="shortcut icon" href="https://dafengzai.github.io/favicon.ico?v=1626885057620">
 <link rel="stylesheet" href="https://dafengzai.github.io/styles/main.css">
 
 
@@ -20,7 +20,7 @@
 
     <meta name="description" content="BBR（Bottleneck Bandwidth and Round-trip propagation time）是Google于2016年提出的一个新的拥塞控制算法，给拥塞控制这一领域提供了一个全新的思路。
 传统的拥塞控制算法思路是基于事..." />
-    <meta name="keywords" content="" />
+    <meta name="keywords" content="TCP,拥塞控制" />
   </head>
   <body>
     <div id="app" class="main">
@@ -29,7 +29,7 @@
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://dafengzai.github.io">
-        <img src="https://dafengzai.github.io/images/avatar.png?v=1626584410935" class="site-logo">
+        <img src="https://dafengzai.github.io/images/avatar.png?v=1626885057620" class="site-logo">
         <h1 class="site-title">大风仔的博客</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -97,6 +97,9 @@
           <div class="post-detail">
             <h2 class="post-title">BBR 介绍</h2>
             <div class="post-date">2021-06-23</div>
+            
+              <div class="feature-container" style="background-image: url('https://dafengzai.github.io/post-images/bbr.png')">
+              </div>
             
             <div class="post-content" v-pre>
               <p>BBR（Bottleneck Bandwidth and Round-trip propagation time）是Google于2016年提出的一个新的拥塞控制算法，给拥塞控制这一领域提供了一个全新的思路。<br>
@@ -219,12 +222,24 @@ cwnd_gain = bbr_high_gain = 2.89. // 此时BBR选择维持 cwnd
 
             </div>
             
+              <div class="tag-container">
+                
+                  <a href="https://dafengzai.github.io/tag/qZE-pZ77A/" class="tag">
+                    TCP
+                  </a>
+                
+                  <a href="https://dafengzai.github.io/tag/xr7VDpk2Ho/" class="tag">
+                    拥塞控制
+                  </a>
+                
+              </div>
+            
             
               <div class="next-post">
                 <div class="next">下一篇</div>
-                <a href="https://dafengzai.github.io/post/tcpip-xie-yi-zhong-de-wang-luo-ceng-gai-shu/">
+                <a href="https://dafengzai.github.io/post/tcp-ack-ji-zhi/">
                   <h3 class="post-title">
-                    TCP/IP协议中的网络层（概述）
+                    TCP 传输机制介绍
                   </h3>
                 </a>
               </div>
