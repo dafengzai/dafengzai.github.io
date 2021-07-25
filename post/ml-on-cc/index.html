@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Learning-based Congestion Control 介绍 | 大风仔的博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://dafengzai.github.io/favicon.ico?v=1627223620608">
+<link rel="stylesheet" href="https://dafengzai.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="从TCP/IP协议诞生之日起到今天，拥塞控制问题已经被研究了几十年了，但仍然是一个非常有挑战性的领域，近年来也有许多新的拥塞控制模型的设计被提出，例如Google BBR 与 copa [1].
+同时，随着近年来的机器学习热潮，将机器学习的..." />
+    <meta name="keywords" content="机器学习,拥塞控制" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://dafengzai.github.io">
+        <img src="https://dafengzai.github.io/images/avatar.png?v=1627223620608" class="site-logo">
+        <h1 class="site-title">大风仔的博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+          <a class="social-link" href="https://github.com/dafengzai" target="_blank">
+            <i class="fab fa-github"></i>
+          </a>
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      Big brother is watching you
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://dafengzai.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Learning-based Congestion Control 介绍</h2>
+            <div class="post-date">2021-07-24</div>
+            
+              <div class="feature-container" style="background-image: url('https://dafengzai.github.io/post-images/ml-on-cc.png')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>从TCP/IP协议诞生之日起到今天，拥塞控制问题已经被研究了几十年了，但仍然是一个非常有挑战性的领域，近年来也有许多新的拥塞控制模型的设计被提出，例如Google BBR 与 copa [1].<br>
+同时，随着近年来的机器学习热潮，将机器学习的高泛化优势引入CC (congestion control) 的想法也逐渐受到关注，sigcomm20 的 orca [2] 就是一个例子。</p>
+<p>那么，在介绍Machine Learing on CC 之前，我们先来谈一谈为什么 ML 可以对CC领域有所帮助。</p>
+<h1 id="why-we-need-learning-based-cc">Why we need learning-based CC</h1>
+<p>[3] 中提到，由于当前新网络场景与环境的剧烈浮现（数据中心，5G，卫星网络，etc.），使得设计出能够在这些不同场景下都能良好工作的CC机制愈发具有挑战性（效率，公平, etc.）。<br>
+同时要注意，在面对复杂多变的网络环境时，一个CC算法往往会会变成 jack of all trades，master of none（杂而不精）或只专注于某类场景 [2]. 例如BBR算法是面对bottleneck buffer bloat的问题而设计，因此在面对浅buffer的场景时，上探带宽引入排队时延的部分在浅buffer场景下就很容易发生丢包而影响最终效果，这种也被称之为 laser-focused solutions.<br>
+这也的确是一个必须现实中要面对的问题：CC在建模设计时，都是基于设计者自身思考得出的某种网络假设与建模的。但网络环境的复杂多变决定了设计者在设计CC机制时无法完全覆盖住所有的网络假设与状况。那么这些 modle_based CC which making decidions by predetermined rules 在面对复杂多变的网络状况时，在没有后续人为调整的情况下，是很难一直保持高性能的传输的。</p>
+<h1 id="what-is-learning-based-cc">What is learning-based CC</h1>
+<p>与传统的基于模型的预先决定好规则的CC不同，learning-based CC 的决策制定是基于<strong>实时</strong>的网络状态的。<br>
+这里的 learning-based CC 可以再继续细分为两个部分：最优化性能CC(performance-oriented CC) 与 data-driven/Machine-learning CC. 其中 performance-oriented CC 与 传统CC的边界十分模糊，ML-CC则是比较受到当前CC领域的关注。</p>
+<h2 id="performance-oriented-cc">performance-oriented CC：</h2>
+<p>这里需要注意，performance-oriented CC 与 传统CC的界限十分模糊，因为这些CC机制的决策规则都是提前就<strong>人为</strong>决定好了的，并且传统CC其实也是<em>实时</em>决策的。若真的要划分出区别的话，则只不过是传统CC机制们是<em>基于事件而非基于状态</em>，例如lose-based CC 基于丢包这一事件修改cwnd，BBR在PROBE_BW状态下上探带宽时依据deliveryRate是否依然保持增长决定下一周期的pacing_gain，根据是否出现 RTT 测量值与 min_RTT 的对比情况判断是否要进入PROBE_RTT状态，这些都是CC基于预先设定好的规则根据网络中是否有目标事件的发生而做出各个传输决策。<br>
+而performance-oriented CC 不同，其则是根据预先设定好的模型，通过测量网络中的实时状态（values而非阶梯型的event）来决定下一步的决策。</p>
+<p>这里举出两个比较经典的performance-oriented CC 算法：Copa [4] 与 PCC [5]</p>
+<ol>
+<li>Copa: 决策思路queuing-delay 来计算target_sending_rate. 其最优化目标为：maximize <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>U</mi></mrow><annotation encoding="application/x-tex">U</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.10903em;">U</span></span></span></span>, <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>U</mi><mo>=</mo><mi>l</mi><mi>o</mi><mi>g</mi><mo>(</mo><mi>λ</mi><mo>)</mo><mo>−</mo><mi>δ</mi><mi>l</mi><mi>o</mi><mi>g</mi><mo>(</mo><mi>d</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">U = log (λ) - δ log (d)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.10903em;">U</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathdefault" style="margin-right:0.01968em;">l</span><span class="mord mathdefault">o</span><span class="mord mathdefault" style="margin-right:0.03588em;">g</span><span class="mopen">(</span><span class="mord mathdefault">λ</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathdefault" style="margin-right:0.03785em;">δ</span><span class="mord mathdefault" style="margin-right:0.01968em;">l</span><span class="mord mathdefault">o</span><span class="mord mathdefault" style="margin-right:0.03588em;">g</span><span class="mopen">(</span><span class="mord mathdefault">d</span><span class="mclose">)</span></span></span></span>, where λ = throughput, d = propagation delay.<br>
+论文作者在特定的报文到来的模型假设下，便可以求解出在最大化优化目标U时，特定d下的target_sending_rate λ : <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>λ</mi><mo>=</mo><mfrac><mn>1</mn><mrow><mi>δ</mi><mo>∗</mo><msub><mi>d</mi><mi>q</mi></msub></mrow></mfrac></mrow><annotation encoding="application/x-tex">λ = \frac{1}{δ*d_{q}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.69444em;vertical-align:0em;"></span><span class="mord mathdefault">λ</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1.3874279999999999em;vertical-align:-0.5423199999999999em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.845108em;"><span style="top:-2.655em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.03785em;">δ</span><span class="mbin mtight">∗</span><span class="mord mtight"><span class="mord mathdefault mtight">d</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.16454285714285716em;"><span style="top:-2.357em;margin-left:0em;margin-right:0.07142857142857144em;"><span class="pstrut" style="height:2.5em;"></span><span class="sizing reset-size3 size1 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.03588em;">q</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2818857142857143em;"><span></span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.394em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5423199999999999em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span>。并以此为依据将当前sending_rate 往target_sending_rate方向接近。</li>
+<li>PCC: PCC也是根据预先设定的计算函数，将当前的网络状态（sending rate, loss rate, RTT）计算出一个 Utility 值，再根据计算出的 Utility值 u 来决定下一步的发送速率。<br>
+<img src="https://dafengzai.github.io/post-images/1627185204576.PNG" alt="" loading="lazy"><br>
+具体来说：</li>
+</ol>
+<blockquote>
+<p>For each pair, PCC attempts a slightly higher rate r(1+ε) and slightly lower rate r(1 − ε). PCC gets two utility measure ments U+ ,U− corresponding to r(1 + ε),r(1 − ε) re spectively. If the higher rate consistently has higher &gt;utility (U+ &gt; U−), then PCC adjusts its sending rate to r new = r(1+ε);</p>
+</blockquote>
+<p>但需要注意的是，performance-oriented CC 的决策模型依旧是人为预先设置好的（最优化函数建模, etc.）并基于此规则对实时网络状态做出反应，做出发送决策调整。<br>
+而下面将要介绍的 data-driven/Machine-learning CC 则不相同。</p>
+<h2 id="machine-learning-cc">Machine Learning CC</h2>
+<p>ML CC 与之前的 CC 算法最大的不同就是这些算法会依<strong>据数据</strong>来去更新其模型的参数设置，而不是去依赖认为提前设置好的模型参数，这也是这类CC算法被称之为 data-driven CC 的原因。<br>
+具体来说，Machine Learning CC 可以被划分为三类：supervised/unsupervised learning CC 与 Reinforce learning CC</p>
+<h3 id="supervisedunsupervised-learning-cc">Supervised/Unsupervised learning CC</h3>
+<p>机器学习领域中经典的监督学习与无监督学习在 CC 领域内的相关应用由来已久，早在1999年，就有研究人员将监督学习运用在“拥塞丢包”的原因探究上 [6], 通过报文的 inter-arrival times 用以区分丢包是由于wireless loss 还是 congestion loss. 但对于在 CC 机制本身的设计方面则应用较少（近几年优秀会议上基本没出现）。根本原因还是因为监督/无监督学习是<strong>离线训练</strong>的机制，模型参数的设定是基于离线的训练数据集训练而得来的。虽然可能在测试集上表现优异，但还是跟之前提到过的 traditional CC 的不足一样，无法适应复杂多变的网络环境，一旦真实网络中出现未在训练集中的网络状况时，基于监督/无监督学习的CC机制是无法一直保证高性能的传输的。</p>
+<h3 id="reinforce-learning-cc">Reinforce learning CC</h3>
+<p>由于传统的监督/无监督的机器学习方法学习在面对复杂多变的网络环境时不能仅依据预先训练好的模型做出足够动态变化的反应以应对，强化学习 Reinforce learning CC 便受到了非常多的关注。<br>
+强化学习方法的优势在于：他不仅实时观测实时的网络状态，并且还会对此做出反应，在每一轮内并通过最大化其内 reward function 期望来<strong>利用这些实时的网络状态来调整模型参数</strong>，使之能对网络的变化做出有效反应。这方面的经典工作就是sigcomm20的 Orca [2]</p>
+<h4 id="orca-classic-meets-modern">Orca: Classic Meets Modern</h4>
+<p>在Orca中，其提出了Machine Learning CC所面对的三个挑战：1- Problem with unseen network scenarios; 2- Convergence issue; 3- Overhead。这些都是挡在ML CC 走向更大舞台所面临的障碍。而Orca创新性的通过“分层”的思想，将 DRL ( Deep Reinforce learning) CC 与 traditional CC 相结合，由 <strong>Deep reinforce learning to decide coarse-grain cwnd as based cwnd.</strong> 下层的传统TCP CC (Cubic) 再在该based-cwnd基础上进行细粒度的cwnd调整，这样就很大程度上解决的之前提到的三个挑战：</p>
+<ol>
+<li>Problem with unseen network scenarios:<br>
+通过强化学习与深度学习相结合，并发挥深度学习从原始数据中提炼高维信息的优势，可以 <em>&quot;utilize  its potentials and capabilities to learn from actual raw input data without relying on preprocessing or handcraft engineering&quot;</em></li>
+<li>Convergence issue:<br>
+对于收敛性的保证，通过往DRL的数据结果 (based cwnd) 故意加上些扰动，由下层的传统TCP Cubic CC 作后备，来提高Orca的收敛性表现。</li>
+<li>Overhead<br>
+由于其创新的分层思想，DRL只决定粗时间粒度上的cwnd，下层细时间颗粒度的cwnd调整由Linux内核自带的Cubic执行，客观上降低了计算开销，论文中测试其cpu utilization为不到10%，大幅优于其他learing-based CC 算法。</li>
+</ol>
+<p>Orca工作时的流程可以参考下图：<br>
+<img src="https://dafengzai.github.io/post-images/1627222105961.PNG" alt="" loading="lazy"></p>
+<h2 id="next-step">Next Step</h2>
+<p>当然，现如今 ML on CC 还有相当大的一段距离要走，其中一个相当重要的问题需要解决，那就是其<strong>可解释性</strong>。一个CC 机制在实际应用时，必须要考虑其收敛性与公平性，而ML CC 可解释性的缺乏使得我们很难去分析其收敛性质与跟其他流竞争时的表现。<br>
+sigcomm20 的工作 Metis [7] 给了我们一个思路，将DL-based network systems 解释为决策树与超图 (hypergraphs) 的形式来给管理员们分析DL-based network systems 的各个性能表现提供了帮助。但如何将ML CC 应用到实际，像BBR那样给网络传输性能带来真正帮助，还仍有相当多的工作值得我们去发掘。</p>
+<h2 id="参考资料">参考资料：</h2>
+<p><a href="https://www.usenix.org/conference/nsdi18/presentation/arun">[1]&quot;Copa: Practical delay-based congestion control for the internet.&quot; 15th {USENIX}  ({NSDI} 18). 2018.</a><br>
+<a href="https://dl.acm.org/doi/abs/10.1145/3387514.3405892?casa_token=clEKWQywgrEAAAAA:GtI1V4r5Jmq0k_NotcJxsOy-k17hEyojEZCFPnRtyaiXHQ6vB_BpMu2bmzE8ywjimL2UQ-DU2gyY3w">[2] &quot;Classic meets modern: A pragmatic learning-based congestion control for the Internet.&quot; </a><br>
+<a href="https://arxiv.org/pdf/2010.11397.pdf">[3] When Machine Learning Meets Congestion Control: A Survey and Comparison</a><br>
+<a href="https://www.usenix.org/conference/nsdi18/presentation/arun">[4] &quot;Copa: Practical delay-based congestion control for the internet.&quot;  ({NSDI} 18). 2018.</a><br>
+<a href="https://www.usenix.org/conference/nsdi15/technical-sessions/presentation/dong">[5]  &quot;{PCC}: Re-architecting congestion control for consistent high performance.&quot;  ({NSDI} 15). 2015.</a><br>
+<a href="https://ieeexplore.ieee.org/abstract/document/756746">[6] &quot;Discriminating congestion losses from wireless losses using inter-arrival times at the receiver,&quot; 1999 </a><br>
+<a href="https://dl.acm.org/doi/abs/10.1145/3387514.3405859">[7]  Interpreting Deep Learning-Based Networking Systems. (SIGCOMM '20).</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://dafengzai.github.io/tag/IoiSKh9xY/" class="tag">
+                    机器学习
+                  </a>
+                
+                  <a href="https://dafengzai.github.io/tag/xr7VDpk2Ho/" class="tag">
+                    拥塞控制
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://dafengzai.github.io/post/bbr/">
+                  <h3 class="post-title">
+                    BBR 介绍
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>
