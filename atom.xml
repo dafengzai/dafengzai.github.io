@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://dafengzai.github.io</id>
     <title>大风仔的博客</title>
-    <updated>2021-07-25T14:37:27.886Z</updated>
+    <updated>2021-08-10T16:19:05.688Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://dafengzai.github.io"/>
     <link rel="self" href="https://dafengzai.github.io/atom.xml"/>
@@ -198,6 +198,55 @@ cwnd_gain = bbr_high_gain = 2.89. // 此时BBR选择维持 cwnd
 <img src="https://dafengzai.github.io/post-images/1626501478820.PNG" alt="" loading="lazy"></p>
 <p>然而，对于非BBR流之间的公平性保证，效果就不一定好了。从上段可以看出，不同BBR流分布式的配合协助机制生效的前提是：large BBR flows会周期性进入PROBE_RTT状态让出带宽，并且让出带宽这个动作造成的延时下降使得其他的flows探测到更低的RTT。<br>
 但在面对其他类型的flows时（例如loss-based 的 Reno/Cubic），若占据大量带宽的是 loss-based flow，那么周期性进入低发送速率状态这一前提就不存在了。只有在碰上丢包事件时才会降低发送速率，而从前面的介绍中可以判断此时bottleneck的排队情况已经很严重了（发送丢包）,已经影响到时延敏感的flow的体验。同时，BBR流通过探测到新的minRTT值来进入同步PROBE_RTT状态再一齐上探保证公平性时，其他不基于RTT作发送判断的流则不会下调其发送带宽，去抢占了更多BBR flows出让的带宽，这就使得BBR的公平性保证受到了挑战。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[QUIC 介绍]]></title>
+        <id>https://dafengzai.github.io/post/quic-jie-shao/</id>
+        <link href="https://dafengzai.github.io/post/quic-jie-shao/">
+        </link>
+        <updated>2021-05-30T14:37:29.000Z</updated>
+        <content type="html"><![CDATA[<p>接着QUIC终于成为标准的这个时机(RFC 9000)，是时候好好回顾与介绍一下QUIC这个之名的新生协议。<br>
+QUIC协议最初由2013年由谷歌发布，之后IETF也成立了标准工作组来去标准化他，并在2021年5月发布了RFC 9000，现在的chrome浏览器与许多谷歌的服务都在使用QUIC。<br>
+最基础的，QUIC全称是“quick udp internet connection”，即QUIC是基于UDP来进行实现的。<br>
+QUIC是一项面向连接的传输协议，旨在为client与server提供一个有状态的交互通道。<br>
+具体来说，QUIC 替换了一些HTTPS的协议栈（HTTP/2 TLS）与TCP（见下图）.<br>
+<img src="https://dafengzai.github.io/post-images/1627312895253.PNG" alt="" loading="lazy"></p>
+<h1 id="quic-motivation">QUIC Motivation</h1>
+<p>那么，在TCP协议稳步发展这么多年后，在发展了许多的拥塞控制算法（cubic，BBR）后，再提出一个新的QUIC协议有什么好处呢？<br>
+主要原因是在Google在设计部署系新的传输机制以应对网络中的延时要求时，发现基于TCP/IP机制进行设计会面临许多的限制。</p>
+<ol>
+<li>由于现在网络中各种中间件（middleboxes）如防火墙等会阻止不熟悉的报文，并且Network Address Translators (NATs) 机制也会重写transports header，让修改报文头结构的显示（explicit）控制模式无法发挥有效作用。使得对于协议的修改可能得十好几年才能真正发规模部署。</li>
+<li>可实现/可部署性。网络的需求日行月异，使得进行快速部署的需求日益旺盛。而TCP一般部署在操作系统内核中，限制了对网络操作进行修改与迭代的速度。</li>
+<li>TCP存在握手时延，再加上上层TLS握手也得花费两个RTT（QUIC也修改了TLS机制），对于短流的传输影响很大。</li>
+<li>Head-of-line Blocking Delay: TCP的数据是bytestream抽象的，这就限制了应用帧级别的控制连接内的数据，并且需要等待丢失的TCP segments全部重传成功。</li>
+</ol>
+<p>而QUIC，通过部署在UDP上且加密transport headers的方式，避免了在网络设备供应商与管理员处修改的前提下，将传输控制转移到了应用层处。</p>
+<h1 id="quic-design">QUIC Design</h1>
+<p>首先是建连的部分，其通过加密与改进握手的方式降低了建连时的RTT并防止被中间件过滤。<br>
+在multipath场景下，其可以在一个连接下拆分出多路的requests/responses状态，相互之间不会阻塞。<br>
+而对于丢包恢复上，其使用了单一的packet number来避免丢包歧义性（TCP重传时sequence nunber就是相同的，会带来歧义性）<br>
+同时，QUIC报文头设计里还包含了Stream ID这一字段，类似于IP/port的五元组来标识一个连接/会话。</p>
+<h2 id="连接建立">连接建立</h2>
+<p>在建立连接时，若client是不知道server的信息的，client会发送 inchoate client hello (CHLO) 包给server，server会发送一个 reject (REJ) 包回复，但这reject包内还包含了server端的相关配置信息（server config）。client接收到该reject信息后，对其内的server config的证书作认证与签名（公私密钥相关算法，本人不涉足安全领域，此处便不展开了），这样client就验证了server config信息，可以发送一个不会被reject的 complete CHLO 包，该报文内还包含了client的公钥，一旦连接成功建立，server会回复 server hello (SHLO) message，该信息为包含了server的公钥的加密信息。这样后续两边的数据传输都需要经过加密才行（1-RTT 握手）。<br>
+同时客户端会缓存与server在之前就建立连接时的server config和source-address token，这样在之后再与原server进行连接时，QUIC便可以直接传输 complete CHLO 包建立接（0-RTT 握手）。（信息后变化时退化为1-RTT握手）<br>
+<img src="https://dafengzai.github.io/post-images/1628525260129.PNG" alt="" loading="lazy"></p>
+<p>这样的设计好处就是速度，连接的建立仅需以此握手，通过缓存与加密机制还能实现0-RTT的重连接。并且由于建立的是加密连接，QUIC还能再进一步减少上层（安全层TLS）的握手时间，这些设计都大大减少了连接建立时的消耗时间。</p>
+<h2 id="流级别的控制">流级别的控制</h2>
+<p>多路（multiplex）一直是上层应用如HTTP的一个需求，使得多个HTTP request/respnse能多读传输，以加快网页的加载速度。然而，由于底层的TCP仍然是单个的按序的比特流传输，这就会面临一个“head-of-line blocking”问题，即一路的数据排队会阻塞其余路径上的数据传输。</p>
+<p>而QUIC也在单条传输链路的基础上设计了多路的机制，同时避免了“head-of-line blocking”问题，即QUIC报文的丢失仅会影响其内数据所在的流，不会像TCP一样等待重传从而阻塞后续其他流的报文正常传输。<br>
+对于stream的抽象，QUIC数据结构内提供 Stream ID 这一字段用以表示流，数据以Stream frame的形式进行封装，一个QUIC 报文内可以放入多个stream的 Stream frame。由于仅基于Stream ID 表示连接，在连接发送变化时（如IP变化）可以很容易地迁移过去。<br>
+当然，这也引入了一个问题：多流下是如何做不同流的数据区分与数据同步的？答案是用{stream ID, offset}这一二元组来区分与标识一个流内的数据。Stream ID 是对整个stream的标识，而子流内的数据顺序，则依靠offset标识，其表示对于该流首字段的偏差，类似于TCP seq，这就保证了子流数据的按序提交。<br>
+<img src="https://dafengzai.github.io/post-images/1628609031573.PNG" alt="" loading="lazy"></p>
+<p>注意，QUIC的flow control可以拆分成多个部分，传输层上的可靠传输依据的是packet number与QUIC ACK进行确认与重传保证可靠传输，但最终的可靠性保证还是面向stream的，以保证stream数据流的按序提交。</p>
+<h2 id="quic-确认">QUIC 确认</h2>
+<p>QUIC在UDP的基础上实现了可靠传输机制，依靠的也是确认（acknowledgement）机制，其用严格单调递增的packet number代替了TCP Seqence，解决了TCP 重传歧义的问题。而数据地按序提交则交由{stream ID, offset}来进行保证，packet number仅作用于报文发送与重传部分。<br>
+而对于TCP选择重传带来的相同包序号造成的重传歧义（retransmission ambiguity）问题，QUIC发送时的packet number是一直递增的，每次发送都是新的值，这就很好地区分了首次发送包与重传包，避免了传输层地重传歧义地问题。<br>
+其内又使用{stream ID, offset}这一二元组来保证数据的有序性与可靠性。<br>
+QUIC ACK内包含了客户端处理时延（用以更精确的RTT估计）与 up to 256 ACK blocks，可以重传更多的丢失数据（TCP SACK为3个）。</p>
+<h2 id="quic-cc">QUIC CC</h2>
+<p>QUIC只是一个框架，并没有设计其内的传输层拥塞控制协议，对于CC的实现，有QUIC-Cubic与QUIC-BBR等。其优势是在应用层进行实现的，可以非常灵活地进行更新与配置。<br>
+要注意QUIC在传输效率并不一定比TCP好，其目的是在不改变底层网络结构（报文头等）的基础上，在用户态实现了一个新的，低握手时延的可靠传输机制。在HTTP应用场景下有一定优势，但根据应用场景的不同选择合适的传输机制是管理员必须要考虑的问题，并不存在一个“绝对优秀”的传输机制。</p>
 ]]></content>
     </entry>
     <entry>
